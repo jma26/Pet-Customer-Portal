@@ -1,16 +1,65 @@
 @import "tailwindcss";
 @plugin "daisyui";
-
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
+@plugin "daisyui/theme" {
+  name: "petboarding";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
 
-html,
-body {
-  @apply bg-white dark:bg-gray-950;
+  /* brand colors */
+  --color-primary: #E86F1E;        /* CTA buttons */
+  --color-primary-focus: #C85F1A;
+  --color-primary-content: #FFFFFF;
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-  }
+  --color-secondary: #6B3F2A;      /* headings / logo */
+  --color-secondary-focus: #5A3322;
+  --color-secondary-content: #FFFFFF;
+
+  --color-accent: #F3CBA5;         /* icons / highlights */
+  --color-accent-focus: #E6B98E;
+  --color-accent-content: #4A2B1C;
+
+  /* neutral / text */
+  --color-neutral: #2F2F2F;        /* heading text */
+  --color-neutral-focus: #1F1F1F;
+  --color-neutral-content: #FFFFFF;
+
+  /* base surfaces */
+  --color-base-100: #FAF9F7;       /* page background */
+  --color-base-200: #F1EFEA;       /* section background */
+  --color-base-300: #E6E3E0;       /* borders / dividers */
+  --color-base-content: #2F2F2F;   /* body text */
+
+  /* semantic colors */
+  --color-info: #4FA3D1;
+  --color-info-content: #F0F9FF;
+
+  --color-success: #6BBF8E;
+  --color-success-content: #ECFDF5;
+
+  --color-warning: #F4B740;
+  --color-warning-content: #FFFBEB;
+
+  --color-error: #E05858;
+  --color-error-content: #FEF2F2;
+
+  /* border radius */
+  --radius-selector: 9999px;  /* pills / buttons */
+  --radius-field: 0.375rem;
+  --radius-box: 1rem;
+
+  /* base sizes */
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  /* border size */
+  --border: 1px;
+
+  /* effects */
+  --depth: 1;
+  --noise: 0;
 }
