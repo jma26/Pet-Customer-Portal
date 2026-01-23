@@ -1,6 +1,6 @@
 import { type CookieOptions, type CookieMethodsServer, createServerClient, parseCookieHeader, serializeCookieHeader } from '@supabase/ssr'
 
-export function createSupabaseServerClient(
+export async function createSupabaseServerClient(
   request: Request
 ) {
   const headers = new Headers();
