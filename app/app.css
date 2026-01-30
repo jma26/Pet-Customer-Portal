@@ -1,9 +1,4 @@
 @import "tailwindcss";
-@plugin "daisyui";
-@theme {
-  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-}
 @plugin "daisyui/theme" {
   name: "petboarding";
   default: true;
@@ -62,4 +57,11 @@
   /* effects */
   --depth: 1;
   --noise: 0;
+}
+@plugin "daisyui" {
+  themes: false;
+}
+@theme {
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
