@@ -1,6 +1,22 @@
+import { Link } from 'react-router';
 import CompanyLogo from '~/assets/paws-and-plays-logo.png';
 
 export default function SideBar() {
+  const Links = [
+    'Dashboard',
+    'Pets',
+    'Reservations',
+    'Billing',
+    'Documents',
+    'Messages',
+    'Profile'
+  ];
+
+  const closeDrawer = () => {
+    const drawerEl = document.querySelector('#my-drawer-2') as HTMLInputElement;
+    if (drawerEl) drawerEl.checked = false;
+  }
+
   return (
     <div className="drawer">
       <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
@@ -8,9 +24,9 @@ export default function SideBar() {
         {/* Navbar */}
         <div className="navbar p-4 w-full">
           <div className="mr-auto">
-            <a className="flex gap-4" href="" tabIndex={0}>
+            <Link to="/" className="flex gap-4" tabIndex={0}>
               <img className="max-w-48" src={CompanyLogo} alt="Paws & Play" />
-            </a>
+            </Link>
           </div>
           <div className="flex-none lg:hidden">
             <label htmlFor="my-drawer-2" aria-label="open sidebar" className="btn btn-square btn-ghost">
@@ -32,13 +48,15 @@ export default function SideBar() {
           <div className="hidden flex-none lg:block">
             <ul className="menu menu-horizontal">
               {/* Navbar menu content here */}
-              <li><a>Dashboard</a></li>
-              <li><a>Pets</a></li>
-              <li><a>Reservations</a></li>
-              <li><a>Billing</a></li>
-              <li><a>Documents</a></li>
-              <li><a>Messages</a></li>
-              <li><a>Profile</a></li>
+              {
+                Links.map((link: string) => {
+                  return (
+                    <li key={link}>
+                      <Link to={link} onClick={closeDrawer}>{link}</Link>
+                    </li>
+                  );
+                })
+              }
             </ul>
           </div>
         </div>
@@ -47,13 +65,15 @@ export default function SideBar() {
         <label htmlFor="my-drawer-2" aria-label="close sidebar" className="drawer-overlay"></label>
         <ul className="menu bg-base-200 min-h-full w-80 p-4">
           {/* Sidebar content here */}
-          <li><a>Dashboard</a></li>
-          <li><a>Pets</a></li>
-          <li><a>Reservations</a></li>
-          <li><a>Billing</a></li>
-          <li><a>Documents</a></li>
-          <li><a>Messages</a></li>
-          <li><a>Profile</a></li>
+          {
+            Links.map((link: string) => {
+              return (
+                <li key={link}>
+                  <Link to={link} onClick={closeDrawer}>{link}</Link>
+                </li>
+              );
+            })
+          }
         </ul>
       </div>
     </div>
