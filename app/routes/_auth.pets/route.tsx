@@ -1,8 +1,9 @@
 import type { Route } from "../_auth/+types/route";
-import { useRef } from "react";
-import { Form } from 'react-router';
+import { useEffect, useRef } from "react";
+import { useFetcher } from 'react-router';
 
 interface Pet {
+  id: string,
   user_id: string,
   created_at?: Date,
   name: string,
@@ -38,14 +39,18 @@ export async function action({ request }: Route.ActionArgs) {
 
   const { createSupabaseServerClient } = await import('~/lib/supabase.server');
   const { supabase } = createSupabaseServerClient(request);
-  const { data, error } = await supabase.from('pets').insert(formObj);
+  const { status, error } = await supabase.from('pets').insert(formObj).select();
 
   if (error) {
     console.error(error);
     throw error;
   }
 
-  return { pet: data}
+  if (status === 201) {
+    console.log('Pet added!');
+    return { status }
+  }
+
 }
 
 export default function Pets({ loaderData }: { loaderData: { pets: Pet[], error: unknown } }) {
@@ -62,7 +67,7 @@ export default function Pets({ loaderData }: { loaderData: { pets: Pet[], error:
         pets.length > 0 ? (
           pets.map((pet) => {
             return (
-              <div className="border-b flex flex-col gap-4 px-4 py-8" key={pet.name}>
+              <div className="border-b flex flex-col gap-4 px-4 py-8" key={pet.id}>
                 <h2>{ pet.name }</h2>
                 <div className="flex gap-2">
                   <span className="badge badge-soft badge-sm">{ pet.breed }</span>
@@ -87,6 +92,13 @@ type ModalTriggerProps = {
 
 function ModalTrigger({ label }: ModalTriggerProps) {
   const modalRef = useRef<HTMLDialogElement>(null);
+  const fetcher = useFetcher();
+  useEffect(() => {
+    if (fetcher.state === 'idle' && fetcher.data?.status === 201) {
+      modalRef.current?.close();
+    }
+  }, [fetcher.state, fetcher.data?.status])
+
   return (
     <>
       <button className="btn btn-primary" onClick={() => modalRef.current?.showModal()}>{ label }</button>
@@ -94,7 +106,7 @@ function ModalTrigger({ label }: ModalTriggerProps) {
         <div className="modal-box">
           <h3 className="font-bold text-lg">Add New Pet</h3>
           <p className="py-2">Let us know more about your furry friend</p>
-          <Form className="flex flex-col gap-4 mt-4" method="POST">
+          <fetcher.Form className="flex flex-col gap-4 mt-4" method="POST">
             <div className="flex flex-col gap-1">
               <label className="label" htmlFor="name">Pet Name</label>
               <input className="input w-full" type="text" placeholder="Pet name" id="name" name="name" required />
@@ -115,7 +127,7 @@ function ModalTrigger({ label }: ModalTriggerProps) {
               </div>
             </div>
             <button className="btn btn-primary mt-4 w-full">Add Pet</button>
-          </Form>
+          </fetcher.Form>
         </div>
         <form method="dialog" className="modal-backdrop">
           <button>close</button>
