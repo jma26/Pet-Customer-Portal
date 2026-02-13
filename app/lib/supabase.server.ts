@@ -1,6 +1,6 @@
 import { type CookieOptions, type CookieMethodsServer, createServerClient, parseCookieHeader, serializeCookieHeader } from '@supabase/ssr'
 
-export async function createSupabaseServerClient(
+export function createSupabaseServerClient(
   request: Request
 ) {
   const headers = new Headers();
@@ -40,7 +40,7 @@ export async function createSupabaseServerClient(
     process.env.SUPABASE_PUBLISHABLE_KEY,
     {
       auth: {
-        detectSessionInUrl: true,
+        detectSessionInUrl: false,
         flowType: 'pkce',
       },
       cookies: cookies
