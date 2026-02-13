@@ -1,6 +1,6 @@
 import type { Route } from "../_auth/+types/route";
 import { useEffect, useRef } from "react";
-import { useFetcher } from 'react-router';
+import { Form, useFetcher } from 'react-router';
 
 interface Pet {
   id: string,
@@ -20,35 +20,60 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
+  const { createSupabaseServerClient } = await import('~/lib/supabase.server');
+  const { supabase } = createSupabaseServerClient(request);
   const petFields = ['name', 'age', 'breed', 'type'] as const;
   const formObj: Partial<Pet> = {};
   const formData = await request.formData();
 
-  for (const key of petFields) {
-    console.log('What is the key', key);
-    const value = formData.get(key);
+  switch(request.method) {
+    case 'POST': {
+      for (const key of petFields) {
+        console.log('What is the key', key);
+        const value = formData.get(key);
+    
+        // formData.get(key) always returns a string of Blob according to MDN
+        // Add error handling - FUTURE
+        if (typeof value !== 'string') continue;
+    
+        // Edge case specifically for age - Transform to number to satisfy Supabase database specification
+        if (key === 'age') formObj.age = Number(value);
+        else formObj[key] = value;
+      }
+    
+      const { status, error } = await supabase.from('pets').insert(formObj).select();
+    
+      if (error) {
+        console.error(error);
+        throw error;
+      }
 
-    // formData.get(key) always returns a string of Blob according to MDN
-    // Add error handling - FUTURE
-    if (typeof value !== 'string') continue;
+      // Status 201
+      return { status }
+    }
 
-    // Edge case specifically for age - Transform to number to satisfy Supabase database specification
-    if (key === 'age') formObj.age = Number(value);
-    else formObj[key] = value;
-  }
+    case 'DELETE': {
+      const id = formData.get('id');
 
-  const { createSupabaseServerClient } = await import('~/lib/supabase.server');
-  const { supabase } = createSupabaseServerClient(request);
-  const { status, error } = await supabase.from('pets').insert(formObj).select();
+      if (typeof id !== 'string') {
+        console.error('Invalid ID for pet deletion');
+        throw new Error('Invalid ID for pet deletion');
+      }
 
-  if (error) {
-    console.error(error);
-    throw error;
-  }
+      const { status, error } = await supabase.from('pets').delete().eq('id', id);
 
-  if (status === 201) {
-    console.log('Pet added!');
-    return { status }
+      if (error) {
+        console.error(error);
+        throw error;
+      }
+
+      // Status 204
+      return { status }
+    }
+    
+    default: {
+      throw new Response('Method not allowed', { status: 405 });
+    }
   }
 
 }
@@ -67,11 +92,20 @@ export default function Pets({ loaderData }: { loaderData: { pets: Pet[], error:
         pets.length > 0 ? (
           pets.map((pet) => {
             return (
-              <div className="border-b flex flex-col gap-4 px-4 py-8" key={pet.id}>
-                <h2>{ pet.name }</h2>
+              <div className="border-b flex flex-col gap-8 px-4 py-8" key={pet.id}>
+                <div className="flex flex-col gap-4">
+                  <h2>{ pet.name }</h2>
+                  <div className="flex gap-2">
+                    <span className="badge badge-soft badge-sm">{ pet.breed }</span>
+                    <span className="badge badge-soft badge-sm">{`${pet.age ?? 'N/A'} YEARS OLD`}</span>
+                  </div>
+                </div>
                 <div className="flex gap-2">
-                  <span className="badge badge-soft badge-sm">{ pet.breed }</span>
-                  <span className="badge badge-soft badge-sm">{ pet.age ?? 'Unknown age' }</span>
+                  <button className="btn btn-outline btn-info">EDIT</button>
+                  <Form method="DELETE">
+                    <input type="hidden" name="id" value={pet.id} />
+                    <button className="btn btn-error">DELETE</button>
+                  </Form>
                 </div>
               </div>
             )  
