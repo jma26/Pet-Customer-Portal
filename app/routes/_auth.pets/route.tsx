@@ -1,6 +1,6 @@
 import type { Route } from "../_auth/+types/route";
-import { useEffect, useRef } from "react";
 import { Form, useFetcher } from 'react-router';
+import Modal from "~/components/Modal";
 
 interface Pet {
   id: string,
@@ -25,49 +25,54 @@ export async function action({ request }: Route.ActionArgs) {
   const petFields = ['name', 'age', 'breed', 'type'] as const;
   const formObj: Partial<Pet> = {};
   const formData = await request.formData();
+  // Build form object
+  for (const key of petFields) {
+    const value = formData.get(key);
+    // formData.get(key) always returns a string of Blob according to MDN
+    // Add error handling - FUTURE
+    if (typeof value !== 'string') continue;
+    // Edge case specifically for age - Transform to number to satisfy Supabase database specification
+    if (key === 'age') formObj.age = Number(value);
+    else formObj[key] = value;
+  }
 
   switch(request.method) {
     case 'POST': {
-      for (const key of petFields) {
-        console.log('What is the key', key);
-        const value = formData.get(key);
-    
-        // formData.get(key) always returns a string of Blob according to MDN
-        // Add error handling - FUTURE
-        if (typeof value !== 'string') continue;
-    
-        // Edge case specifically for age - Transform to number to satisfy Supabase database specification
-        if (key === 'age') formObj.age = Number(value);
-        else formObj[key] = value;
-      }
-    
       const { status, error } = await supabase.from('pets').insert(formObj).select();
-    
       if (error) {
         console.error(error);
         throw error;
       }
-
       // Status 201
       return { status }
     }
 
     case 'DELETE': {
       const id = formData.get('id');
-
       if (typeof id !== 'string') {
         console.error('Invalid ID for pet deletion');
         throw new Error('Invalid ID for pet deletion');
       }
-
       const { status, error } = await supabase.from('pets').delete().eq('id', id);
-
       if (error) {
         console.error(error);
         throw error;
       }
-
       // Status 204
+      return { status }
+    }
+
+    case 'PUT': {
+      const id = formData.get('id');
+      if (typeof id !== 'string') {
+        console.error('Invalid ID for pet update');
+        throw new Error('Invalid ID for pet update');
+      }
+      const { status, error } = await supabase.from('pets').update(formObj).eq('id', id);
+      if (error) {
+        console.error(error);
+        throw error;
+      }
       return { status }
     }
     
@@ -86,7 +91,15 @@ export default function Pets({ loaderData }: { loaderData: { pets: Pet[], error:
     <>
       <div className="border-b flex justify-between items-center max-w-3xl mx-auto px-4 py-8">
         <h1 className="font-medium text-3xl">My Pets</h1>
-        <ModalTrigger label="Add Pet"/>
+        <Modal
+          triggerLabel="Add Pet"
+          title="Add New Pet"
+          description="Let us know more about your furry friend"
+        >
+          {(fetcher) => (
+            <PetForm fetcher={fetcher} submitLabel="Add Pet" />
+          )}
+        </Modal>
       </div>
       {
         pets.length > 0 ? (
@@ -101,7 +114,14 @@ export default function Pets({ loaderData }: { loaderData: { pets: Pet[], error:
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button className="btn btn-outline btn-info">EDIT</button>
+                  <Modal
+                    triggerLabel="EDIT"
+                    title="Edit Pet"
+                  >
+                    {(fetcher) => (
+                      <PetForm fetcher={fetcher} pet={pet} method="PUT" submitLabel="Save Changes" />
+                    )}
+                  </Modal>
                   <Form method="DELETE">
                     <input type="hidden" name="id" value={pet.id} />
                     <button className="btn btn-error">DELETE</button>
@@ -120,53 +140,66 @@ export default function Pets({ loaderData }: { loaderData: { pets: Pet[], error:
   )
 };
 
-type ModalTriggerProps = {
-  label: string;
-};
+type PetFormProps = {
+  fetcher: ReturnType<typeof useFetcher>
+  pet?: Pet
+  method?: 'POST' | 'PUT'
+  submitLabel: string
+}
 
-function ModalTrigger({ label }: ModalTriggerProps) {
-  const modalRef = useRef<HTMLDialogElement>(null);
-  const fetcher = useFetcher();
-  useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data?.status === 201) {
-      modalRef.current?.close();
-    }
-  }, [fetcher.state, fetcher.data?.status])
-
+function PetForm({ fetcher, pet, method = 'POST', submitLabel }: PetFormProps) {
   return (
-    <>
-      <button className="btn btn-primary" onClick={() => modalRef.current?.showModal()}>{ label }</button>
-      <dialog id="petModal" className="modal" ref={modalRef}>
-        <div className="modal-box">
-          <h3 className="font-bold text-lg">Add New Pet</h3>
-          <p className="py-2">Let us know more about your furry friend</p>
-          <fetcher.Form className="flex flex-col gap-4 mt-4" method="POST">
-            <div className="flex flex-col gap-1">
-              <label className="label" htmlFor="name">Pet Name</label>
-              <input className="input w-full" type="text" placeholder="Pet name" id="name" name="name" required />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="label" htmlFor="age">Pet Age</label>
-              <input className="input w-full" type="number" placeholder="Pet age" id="age" name="age" required />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="label" htmlFor="breed">Pet Breed</label>
-              <input className="input w-full" type="text" placeholder="Pet breed" id="breed" name="breed" required />
-            </div>
-            <div className="flex flex-col gap-1 join">
-              <label className="label" htmlFor="type">Pet Type</label>
-              <div className="w-full">
-                <input type="radio" name="type" className="join-item btn" id="type" aria-label="Dog" value="Dog" defaultChecked />
-                <input type="radio" name="type" className="join-item btn" id="type" aria-label="Cat" value="Cat" />
-              </div>
-            </div>
-            <button className="btn btn-primary mt-4 w-full">Add Pet</button>
-          </fetcher.Form>
+    <fetcher.Form method={method} className="flex flex-col gap-4 mt-4">
+      {pet && <input type="hidden" name="id" value={pet.id} />}
+
+      <div className="flex flex-col gap-1">
+        <label className="label" htmlFor="name">Pet Name</label>
+        <input
+          name="name"
+          className="input w-full"
+          defaultValue={pet?.name}
+          required
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label className="label" htmlFor="age">Pet Age</label>
+        <input
+          type="number"
+          name="age"
+          className="input w-full"
+          defaultValue={pet?.age}
+          required
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label className="label" htmlFor="breed">Pet Breed</label>
+        <input
+          name="breed"
+          className="input w-full"
+          defaultValue={pet?.breed}
+          required
+        />
+      </div>
+      <div className="flex flex-col gap-1 join">
+        <label className="label" htmlFor="type">Pet Type</label>
+        <div className="flex w-full">
+          {['Dog', 'Cat'].map((type) => (
+            <input
+              key={type}
+              type="radio"
+              name="type"
+              value={type}
+              defaultChecked={pet?.type === type}
+              className="join-item btn flex-1"
+              aria-label={type}
+            />
+          ))}
         </div>
-        <form method="dialog" className="modal-backdrop">
-          <button>close</button>
-        </form>
-      </dialog>
-    </>
+      </div>
+
+      <button className="btn btn-primary mt-4 w-full">
+        {submitLabel}
+      </button>
+    </fetcher.Form>
   )
 }
