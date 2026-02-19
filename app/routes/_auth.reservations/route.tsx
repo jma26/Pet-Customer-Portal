@@ -1,5 +1,5 @@
 import type { Route } from "../_auth/+types/route";
-import { useFetcher } from 'react-router';
+import { Form, useFetcher } from 'react-router';
 import { useState } from "react";
 import Modal from "~/components/Modal";
 
@@ -85,19 +85,52 @@ export default function Reservations({ loaderData }: { loaderData: { pets: PetRe
 
   return (
     <>
-      <section className="flex flex-col min-h-screen mx-auto px-4 py-8">
+      <section className="flex flex-col min-h-screen mx-auto px-4">
         <div className="flex flex-col gap-1">
-          <h1 className="font-medium text-3xl">Reservations</h1>
-          <p className="mb-16">You have no reservations.</p>
-          <Modal
-            triggerLabel="Book a reservation now!"
-            title="Book a reservation"
-            description="We look forward to seeing you soon!"
-          >
-            {(fetcher) => (
-              <ReservationForm fetcher={fetcher} pets={pets} submitLabel="Submit Reservation" /> 
-            )}
-          </Modal>
+          <div className="border-b flex flex-wrap gap-4 justify-between items-center py-8">
+            <h1 className="font-medium text-3xl">Reservations</h1>
+            <Modal
+              triggerLabel="Book a reservation now!"
+              title="Book a reservation"
+              description="We look forward to seeing you soon!"
+            >
+              {(fetcher) => (
+                <ReservationForm fetcher={fetcher} pets={pets} submitLabel="Submit Reservation" /> 
+              )}
+            </Modal>
+          </div>
+          {reservations.length > 0 ? (
+            reservations.map((reservation) => {
+              return (
+                <div className="border-b flex flex-col gap-8 px-4 py-8" key={reservation.id}>
+                  <div className="flex flex-col gap-4">
+                    <h2>{ reservation.name }</h2>
+                    <div className="flex flex-col gap-2">
+                      <p>Service: { reservation.service }</p>
+                      <p>Date: { new Date(reservation.date).toLocaleDateString() }</p>
+                      <p>Time: { reservation.time }</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Modal
+                      triggerLabel="EDIT"
+                      title="Edit Reservation"
+                    >
+                      {(fetcher) => (
+                        <ReservationForm fetcher={fetcher} reservation={reservation} method="PUT" submitLabel="Save Changes" />
+                      )}
+                    </Modal>
+                    <Form method="DELETE">
+                      <input type="hidden" name="id" value={reservation.id} />
+                      <button className="btn btn-error">DELETE</button>
+                    </Form>
+                  </div>
+                </div>
+              )
+            })
+          ) : (
+            <p className="mb-16">You have no reservations.</p>
+          )}
         </div>
         <div className="flex flex-col flex-1 gap-4">
         </div>
