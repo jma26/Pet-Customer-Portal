@@ -85,6 +85,20 @@ export async function action({ request }: Route.ActionArgs) {
       return { status }
     }
 
+    case 'PUT': {
+      const id = formData.get('id');
+      if (typeof id !== 'string') {
+        console.error('Invalid ID for reservation update');
+        throw new Error('Invalid ID for reservation update');
+      }
+      const { status, error } = await supabase.from('reservations').update(formObj).eq('id', id);
+      if (error) {
+        console.error(error);
+        throw error;
+      }
+      return { status }
+    }
+
     default: {
       throw new Response('Method Not Allowed', { status: 405 });
     }
@@ -169,6 +183,7 @@ function ReservationForm({ fetcher, pets, reservation, method = "POST", submitLa
   return (
     <fetcher.Form method={method} className="flex flex-col gap-4 mt-4">
       {<input type="hidden" name="pet_id" value={petId} />}
+      {<input type="hidden" name="id" value={reservation?.id} />}
 
       <div className="flex flex-col gap-4">
         <fieldset className="fieldset">
