@@ -19,7 +19,7 @@ interface Reservation {
   pet_id: string,
   created_at?: Date,
   name: string,
-  date: Date,
+  date: Date
   time: string,
   service: string
 }
@@ -69,11 +69,27 @@ export async function action({ request }: Route.ActionArgs) {
       // Status 201
       return { status }
     }
+    
+    case 'DELETE': {
+      const id = formData.get('id');
+      if (typeof id !== 'string') {
+        console.error('Invalid ID for pet deletion');
+        throw new Error('Invalid ID for reservation deletion');
+      }
+      const { status, error } = await supabase.from('reservations').delete().eq('id', id);
+      if (error) {
+        console.error(error);
+        throw error;
+      }
+      // Status 204
+      return { status }
+    }
 
     default: {
       throw new Response('Method Not Allowed', { status: 405 });
     }
   }
+
 }
 
 export default function Reservations({ loaderData }: { loaderData: { pets: PetReservation[], error: unknown } }) {
@@ -117,7 +133,7 @@ export default function Reservations({ loaderData }: { loaderData: { pets: PetRe
                       title="Edit Reservation"
                     >
                       {(fetcher) => (
-                        <ReservationForm fetcher={fetcher} reservation={reservation} method="PUT" submitLabel="Save Changes" />
+                        <ReservationForm fetcher={fetcher} pets={pets} reservation={reservation} method="PUT" submitLabel="Save Changes" />
                       )}
                     </Modal>
                     <Form method="DELETE">
@@ -141,14 +157,14 @@ export default function Reservations({ loaderData }: { loaderData: { pets: PetRe
 
 type ReservationFormProps = {
   fetcher: ReturnType<typeof useFetcher>,
-  pet?: Pet,
   pets?: Pet[],
+  reservation?: Reservation,
   submitLabel: string
   method?: 'POST' | 'PUT'
 }
 
-function ReservationForm({ fetcher, pet, pets, method = "POST", submitLabel }: ReservationFormProps) {
-  const [petId, setPetId] = useState(pet?.id || '');
+function ReservationForm({ fetcher, pets, reservation, method = "POST", submitLabel }: ReservationFormProps) {
+  const [petId, setPetId] = useState(reservation?.pet_id || '');
 
   return (
     <fetcher.Form method={method} className="flex flex-col gap-4 mt-4">
@@ -157,7 +173,7 @@ function ReservationForm({ fetcher, pet, pets, method = "POST", submitLabel }: R
       <div className="flex flex-col gap-4">
         <fieldset className="fieldset">
           <legend className="fieldset-legend">Select a pet</legend>
-          <select className="select" defaultValue="Select a pet" name="name" onChange={(e) => setPetId(e.target.selectedOptions[0].getAttribute('data-id') || '')}>
+          <select className="select" defaultValue={reservation?.name || "Select a pet"} name="name" onChange={(e) => setPetId(e.target.selectedOptions[0].getAttribute('data-id') || '')}>
             <option disabled>Select a pet</option>
             {pets && pets.length > 0 ? (
               pets.map((pet: Pet) => (
@@ -170,16 +186,16 @@ function ReservationForm({ fetcher, pet, pets, method = "POST", submitLabel }: R
         </fieldset>
         <div className="flex flex-col gap-1">
           <label className="label" htmlFor="date">Reservation date</label>
-          <input type="date" className="input" name="date" />
+          <input type="date" className="input" name="date" defaultValue={reservation?.date ? new Date(reservation.date).toISOString().split('T')[0] : ''} />
         </div>
         <div className="flex flex-col gap-1">
           <label className="label" htmlFor="time">Reservation time</label>
-          <input type="time" className="input" name="time" />
+          <input type="time" className="input" name="time" defaultValue={reservation?.time} />
         </div>
       </div>
       <div className="flex flex-col gap-1">
         <label className="label" htmlFor="service">Services</label>
-        <select className="select" defaultValue="Select a service" name="service">
+        <select className="select" defaultValue={reservation?.service || "Select a service"} name="service">
           <option value="daycare">Daycare</option>
           <option value="grooming">Grooming</option>
           <option value="boarding">Boarding</option>
