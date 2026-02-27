@@ -28,7 +28,7 @@ export default function AvatarUploader() {
   
   return (
     <>
-      <input type="file" className="file-input" ref={fileInputRef} hidden onChange={handleImageChange} accept="image/png/, image/jpeg, image/jpg" />
+      <input type="file" className="file-input" name="avatar" ref={fileInputRef} hidden onChange={handleImageChange} accept="image/png/, image/jpeg, image/jpg" />
 
       {/* Avatar Display + Button */}
       <button className={`avatar aspect-square cursor-pointer duration-300 max-w-[50%] mx-auto p-2 ring-offset-base-300 ring-1 ring-offset-1 rounded-full transition-shadows w-full hover:ring-primary focus:ring-primary active:ring-primary ${imageSrc ? 'ring-primary/60' : 'ring-primary/30'}`} type="button" onClick={handleClick} aria-label={ imageSrc ? 'Change photo' : 'Upload photo'}>

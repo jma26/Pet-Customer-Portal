@@ -1,5 +1,6 @@
 import type { Route } from "../_auth/+types/route";
 import { Form, useFetcher } from 'react-router';
+import AvatarUploader from "~/components/AvatarUploader";
 import Modal from "~/components/Modal";
 
 interface Pet {
@@ -9,7 +10,8 @@ interface Pet {
   name: string,
   age: number,
   breed: string,
-  type: string
+  type: string,
+  avatar_path: string
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -25,6 +27,9 @@ export async function action({ request }: Route.ActionArgs) {
   const petFields = ['name', 'age', 'breed', 'type'] as const;
   const formObj: Partial<Pet> = {};
   const formData = await request.formData();
+  const avatarFile = formData.get('avatar');
+  const hasAvatar = avatarFile instanceof File;
+
   // Build form object
   for (const key of petFields) {
     const value = formData.get(key);
@@ -36,15 +41,46 @@ export async function action({ request }: Route.ActionArgs) {
     else formObj[key] = value;
   }
 
+  console.log('This is the form object', formObj);
+  console.log('What is the avatarFile', avatarFile);
+  console.log('Do I have an avatar', hasAvatar);
+
   switch(request.method) {
     case 'POST': {
-      const { status, error } = await supabase.from('pets').insert(formObj).select();
+      const { data: pet, error } = await supabase.from('pets').insert(formObj).select();
       if (error) {
         console.error(error);
         throw error;
       }
+      
+      console.log('What is this pet object being returned', pet);
+      console.log('What is userId', pet[0].user_id);
+
+      if (hasAvatar) {
+        // Upload to storage
+        const { uploadPetAvatar } = await import ('~/lib/uploadAvatar.server');
+        const filePath = await uploadPetAvatar({
+          supabase,
+          file: avatarFile,
+          userId: pet[0].user_id,
+          petId: pet[0].id
+        });
+
+        console.log('What is the filepath', filePath);
+
+        // Update Pet table avatar_path column
+        const { error } =  await supabase.from('pets').update({ avatar_path: filePath }).eq('id', pet[0].id);
+        if (error) {
+          console.error(error);
+          throw error;
+        }
+
+        return { success: true }
+
+      }
+
       // Status 201
-      return { status }
+      return { success: true }
     }
 
     case 'DELETE': {
@@ -68,12 +104,36 @@ export async function action({ request }: Route.ActionArgs) {
         console.error('Invalid ID for pet update');
         throw new Error('Invalid ID for pet update');
       }
-      const { status, error } = await supabase.from('pets').update(formObj).eq('id', id);
+
+      const { data: pet, error } = await supabase.from('pets').update(formObj).eq('id', id).select();
       if (error) {
         console.error(error);
         throw error;
       }
-      return { status }
+
+      if (hasAvatar) {
+        // Upload to storage
+        const { uploadPetAvatar } = await import ('~/lib/uploadAvatar.server');
+        const filePath = await uploadPetAvatar({
+          supabase,
+          file: avatarFile,
+          userId: pet[0].user_id,
+          petId: pet[0].id
+        });
+
+        console.log('What is the filepath', filePath);
+
+        // Update Pet table avatar_path column
+        const { error } =  await supabase.from('pets').update({ avatar_path: filePath }).eq('id', pet[0].id);
+        if (error) {
+          console.error(error);
+          throw error;
+        }
+
+        return { success: true }
+
+      }
+      return { success: true }
     }
     
     default: {
@@ -149,8 +209,12 @@ type PetFormProps = {
 
 function PetForm({ fetcher, pet, method = 'POST', submitLabel }: PetFormProps) {
   return (
-    <fetcher.Form method={method} className="flex flex-col gap-4 mt-4">
+    <fetcher.Form method={method} encType="multipart/form-data" className="flex flex-col gap-4 mt-4">
       {pet && <input type="hidden" name="id" value={pet.id} />}
+
+      <div className="flex flex-col gap-1">
+        <AvatarUploader />
+      </div>
 
       <div className="flex flex-col gap-1">
         <label className="label" htmlFor="name">Pet Name</label>

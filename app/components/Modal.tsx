@@ -18,7 +18,7 @@ export default function Modal({
   const fetcher = useFetcher()
 
   useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data?.status) {
+    if (fetcher.state === 'idle' && fetcher.data?.success) {
       console.log('fetcher data', fetcher.data);
       fetcher.reset();
       modalRef.current?.close()
