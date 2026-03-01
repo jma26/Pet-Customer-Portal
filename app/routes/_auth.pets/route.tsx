@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { Route } from "../_auth/+types/route";
 import { Form, useFetcher } from 'react-router';
 import AvatarUploader from "~/components/AvatarUploader";
@@ -17,8 +18,18 @@ interface Pet {
 export async function loader({ request }: Route.LoaderArgs) {
   const { createSupabaseServerClient } = await import('~/lib/supabase.server');
   const { supabase } = createSupabaseServerClient(request);
+  // Retrieve pets from database
   const { data, error } = await supabase.from('pets').select();
-  return { pets: data , error };
+  // Retrieve avatar for each pet
+  const pets = data?.map((pet) => {
+    const { data } = supabase.storage.from('pet-photos').getPublicUrl(`${pet.avatar_path}`);
+    return {
+      ...pet,
+      avatar_path: data.publicUrl ?? null
+    }
+  })
+  console.log('What are the pets', pets);
+  return { pets, error };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -112,6 +123,11 @@ export async function action({ request }: Route.ActionArgs) {
       }
 
       if (hasAvatar) {
+
+        // Delete old avatar
+        if (pet[0].avatar_path) {
+          await supabase.storage.from('pet-photos').remove([`${pet[0].avatar_path}`]);
+        }
         // Upload to storage
         const { uploadPetAvatar } = await import ('~/lib/uploadAvatar.server');
         const filePath = await uploadPetAvatar({
@@ -121,10 +137,9 @@ export async function action({ request }: Route.ActionArgs) {
           petId: pet[0].id
         });
 
-        console.log('What is the filepath', filePath);
-
         // Update Pet table avatar_path column
-        const { error } =  await supabase.from('pets').update({ avatar_path: filePath }).eq('id', pet[0].id);
+        const { error } =  await supabase.from('pets').update({ avatar_path: filePath }).eq('id', pet[0].id).select();
+
         if (error) {
           console.error(error);
           throw error;
@@ -208,12 +223,23 @@ type PetFormProps = {
 }
 
 function PetForm({ fetcher, pet, method = 'POST', submitLabel }: PetFormProps) {
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (fetcher.state === 'idle' && (fetcher.data as { success?: boolean })?.success) {
+      formRef.current?.reset();
+    }
+  }, [fetcher.state, fetcher.data]);
   return (
-    <fetcher.Form method={method} encType="multipart/form-data" className="flex flex-col gap-4 mt-4">
+    <fetcher.Form
+      ref={formRef}
+      method={method} 
+      encType="multipart/form-data" 
+      className="flex flex-col gap-4 mt-4">
       {pet && <input type="hidden" name="id" value={pet.id} />}
 
       <div className="flex flex-col gap-1">
-        <AvatarUploader />
+        <AvatarUploader avatar_path={pet?.avatar_path} />
       </div>
 
       <div className="flex flex-col gap-1">

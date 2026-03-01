@@ -1,16 +1,18 @@
+import { SupabaseClient } from "@supabase/supabase-js";
+
 export async function uploadPetAvatar({
   supabase,
   file,
   userId,
   petId
 }: {
-  supabase: any,
+  supabase: SupabaseClient,
   file: File,
   userId: string,
   petId: string
 }) {
-  const filePath = `userid-${userId}/petid-${petId}/avatar`;
-  const { error } = supabase.storage.from('pet-photos').upload(filePath, file, {
+  const filePath = `${userId}/${petId}/avatar-${crypto.randomUUID()}`;
+  const { error } = await supabase.storage.from('pet-photos').upload(filePath, file, {
     upsert: true,
     contentType: file.type,
   });
