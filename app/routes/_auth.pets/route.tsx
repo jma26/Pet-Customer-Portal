@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { Route } from "../_auth/+types/route";
 import { Form, useFetcher } from 'react-router';
-import AvatarUploader from "~/components/AvatarUploader";
+import AvatarUploader, { type AvatarUploaderHandle } from "~/components/AvatarUploader";
 import Modal from "~/components/Modal";
 
 interface Pet {
@@ -164,7 +164,7 @@ export default function Pets({ loaderData }: { loaderData: { pets: Pet[], error:
   console.log('Okay, what is the data', pets);
   return (
     <>
-      <div className="border-b flex justify-between items-center max-w-3xl mx-auto px-4 py-8">
+      <div className="border-b flex justify-between items-center mx-auto px-4 py-8">
         <h1 className="font-medium text-3xl">My Pets</h1>
         <Modal
           triggerLabel="Add Pet"
@@ -181,7 +181,7 @@ export default function Pets({ loaderData }: { loaderData: { pets: Pet[], error:
           pets.map((pet) => {
             return (
               <div className="border-b flex flex-col gap-8 px-4 py-8" key={pet.id}>
-                <div className="flex items-center gap-8">
+                <div className="flex gap-8 items-center">
                   <div className="avatar">
                     <div className="w-40 rounded-full">
                       <img src={ pet.avatar_path } alt={ pet.name } />
@@ -231,10 +231,12 @@ type PetFormProps = {
 
 function PetForm({ fetcher, pet, method = 'POST', submitLabel }: PetFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
+  const avatarRef = useRef<AvatarUploaderHandle>(null);
 
   useEffect(() => {
     if (fetcher.state === 'idle' && (fetcher.data as { success?: boolean })?.success) {
       formRef.current?.reset();
+      avatarRef.current?.reset();
     }
   }, [fetcher.state, fetcher.data]);
   return (
@@ -246,7 +248,10 @@ function PetForm({ fetcher, pet, method = 'POST', submitLabel }: PetFormProps) {
       {pet && <input type="hidden" name="id" value={pet.id} />}
 
       <div className="flex flex-col gap-1">
-        <AvatarUploader avatar_path={pet?.avatar_path} />
+        <AvatarUploader
+          avatar_path={pet?.avatar_path}
+          ref={avatarRef}
+        />
       </div>
 
       <div className="flex flex-col gap-1">
@@ -287,7 +292,7 @@ function PetForm({ fetcher, pet, method = 'POST', submitLabel }: PetFormProps) {
               name="type"
               value={type}
               defaultChecked={pet?.type === type}
-              className="join-item btn flex-1"
+              className="btn flex-1 join-item rounded-md"
               aria-label={type}
             />
           ))}
