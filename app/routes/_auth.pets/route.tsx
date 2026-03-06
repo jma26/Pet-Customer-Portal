@@ -181,26 +181,33 @@ export default function Pets({ loaderData }: { loaderData: { pets: Pet[], error:
           pets.map((pet) => {
             return (
               <div className="border-b flex flex-col gap-8 px-4 py-8" key={pet.id}>
-                <div className="flex flex-col gap-4">
-                  <h2>{ pet.name }</h2>
-                  <div className="flex gap-2">
-                    <span className="badge badge-soft badge-sm">{ pet.breed }</span>
-                    <span className="badge badge-soft badge-sm">{`${pet.age ?? 'N/A'} YEARS OLD`}</span>
+                <div className="flex items-center gap-8">
+                  <div className="avatar">
+                    <div className="w-40 rounded-full">
+                      <img src={ pet.avatar_path } alt={ pet.name } />
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <Modal
-                    triggerLabel="EDIT"
-                    title="Edit Pet"
-                  >
-                    {(fetcher) => (
-                      <PetForm fetcher={fetcher} pet={pet} method="PUT" submitLabel="Save Changes" />
-                    )}
-                  </Modal>
-                  <Form method="DELETE">
-                    <input type="hidden" name="id" value={pet.id} />
-                    <button className="btn btn-error">DELETE</button>
-                  </Form>
+                  <div className="flex flex-col gap-4">
+                    <h2>{ pet.name }</h2>
+                    <div className="flex gap-2">
+                      <span className="badge badge-soft badge-sm">{ pet.breed }</span>
+                      <span className="badge badge-soft badge-sm">{`${pet.age ?? 'N/A'} YEARS OLD`}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Modal
+                        triggerLabel="EDIT"
+                        title="Edit Pet"
+                      >
+                        {(fetcher) => (
+                          <PetForm fetcher={fetcher} pet={pet} method="PUT" submitLabel="Save Changes" />
+                        )}
+                      </Modal>
+                      <Form method="DELETE">
+                        <input type="hidden" name="id" value={pet.id} />
+                        <button className="btn btn-error">DELETE</button>
+                      </Form>
+                    </div>
+                  </div>
                 </div>
               </div>
             )  
