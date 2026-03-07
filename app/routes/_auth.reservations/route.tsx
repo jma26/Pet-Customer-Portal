@@ -1,6 +1,6 @@
 import type { Route } from "../_auth/+types/route";
 import { Form, useFetcher } from 'react-router';
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Modal from "~/components/Modal";
 
 interface Pet {
@@ -10,7 +10,8 @@ interface Pet {
   name: string,
   age: number,
   breed: string,
-  type: string
+  type: string,
+  avatar_path: string
 }
 
 interface Reservation {
@@ -30,11 +31,19 @@ export async function loader({ request }: Route.LoaderArgs) {
   const { createSupabaseServerClient } = await import('~/lib/supabase.server');
   const { supabase } = createSupabaseServerClient(request);
   const { data, error } = await supabase.from('pets').select(
-    `id, name, age, breed, type,
+    `id, name, age, breed, type, avatar_path,
     reservations (id, name, date, time, service, pet_id)
     `
   )
-  return { pets: data , error };
+
+  const pets = data?.map((pet) => {
+    const { data } = supabase.storage.from('pet-photos').getPublicUrl(`${pet.avatar_path}`);
+    return {
+      ...pet,
+      avatar_path: data.publicUrl ?? null
+    }
+  })
+  return { pets, error };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -66,8 +75,7 @@ export async function action({ request }: Route.ActionArgs) {
         console.error(error);
         throw error;
       }
-      // Status 201
-      return { status }
+      return { success: true }
     }
     
     case 'DELETE': {
@@ -81,8 +89,7 @@ export async function action({ request }: Route.ActionArgs) {
         console.error(error);
         throw error;
       }
-      // Status 204
-      return { status }
+      return { success: true }
     }
 
     case 'PUT': {
@@ -96,7 +103,7 @@ export async function action({ request }: Route.ActionArgs) {
         console.error(error);
         throw error;
       }
-      return { status }
+      return { success: true }
     }
 
     default: {
@@ -129,38 +136,53 @@ export default function Reservations({ loaderData }: { loaderData: { pets: PetRe
               )}
             </Modal>
           </div>
-          {reservations.length > 0 ? (
-            reservations.map((reservation) => {
-              return (
-                <div className="border-b flex flex-col gap-8 px-4 py-8" key={reservation.id}>
-                  <div className="flex flex-col gap-4">
-                    <h2>{ reservation.name }</h2>
-                    <div className="flex flex-col gap-2">
-                      <p>Service: { reservation.service }</p>
-                      <p>Date: { new Date(reservation.date).toLocaleDateString() }</p>
-                      <p>Time: { reservation.time }</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Modal
-                      triggerLabel="EDIT"
-                      title="Edit Reservation"
-                    >
-                      {(fetcher) => (
-                        <ReservationForm fetcher={fetcher} pets={pets} reservation={reservation} method="PUT" submitLabel="Save Changes" />
-                      )}
-                    </Modal>
-                    <Form method="DELETE">
-                      <input type="hidden" name="id" value={reservation.id} />
-                      <button className="btn btn-error">DELETE</button>
-                    </Form>
-                  </div>
-                </div>
-              )
-            })
-          ) : (
-            <p className="mb-16">You have no reservations.</p>
-          )}
+          {
+            pets.length > 0 ? (
+              pets.map((pet) => {
+                if (pet.reservations.length > 0) {
+                  const reservations = pet.reservations
+                  return reservations.map((reservation) => {
+                    return (
+                      <div className="border-b flex flex-col gap-8 px-4 py-8" key={reservation.id}>
+                        <div className="flex gap-8 items-center">
+                          <div className="avatar">
+                            <div className="w-40 rounded-full">
+                              <img src={ pet.avatar_path } alt={ pet.name } />
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-4">
+                            <h2>{ reservation.name }</h2>
+                            <div className="flex flex-col gap-2">
+                              <p>Service: { reservation.service }</p>
+                              <p>Date: { new Date(reservation.date).toLocaleDateString() }</p>
+                              <p>Time: { reservation.time }</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Modal
+                                triggerLabel="EDIT"
+                                title="Edit Reservation"
+                              >
+                                {(fetcher) => (
+                                  <ReservationForm fetcher={fetcher} pets={pets} reservation={reservation} method="PUT" submitLabel="Save Changes" />
+                                )}
+                              </Modal>
+                              <Form method="DELETE">
+                                <input type="hidden" name="id" value={reservation.id} />
+                                <button className="btn btn-error">DELETE</button>
+                              </Form>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                }
+                return []
+              })
+            ) : (
+              <p className="mb-16">You have no reservations.</p>
+            )
+          }
         </div>
         <div className="flex flex-col flex-1 gap-4">
         </div>
@@ -178,10 +200,21 @@ type ReservationFormProps = {
 }
 
 function ReservationForm({ fetcher, pets, reservation, method = "POST", submitLabel }: ReservationFormProps) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [petId, setPetId] = useState(reservation?.pet_id || '');
 
+  useEffect(() => {
+    if (fetcher.state === 'idle' && (fetcher.data as { success?: boolean })?.success) {
+      formRef.current?.reset();
+    }
+  },  [fetcher.state, fetcher.data]);
+
   return (
-    <fetcher.Form method={method} className="flex flex-col gap-4 mt-4">
+    <fetcher.Form 
+      ref={formRef}
+      method={method} 
+      className="flex flex-col gap-4 mt-4"
+    >
       {<input type="hidden" name="pet_id" value={petId} />}
       {<input type="hidden" name="id" value={reservation?.id} />}
 
