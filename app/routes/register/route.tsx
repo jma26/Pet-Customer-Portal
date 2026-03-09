@@ -3,17 +3,23 @@ import CompanyLogo from '~/assets/paws-and-plays-logo.png';
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
+  const first_name = formData.get('first_name') as string;
+  const last_name = formData.get('last_name') as string;
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
   const { createSupabaseServerClient } = await import('~/lib/supabase.server');
-  const { supabase, headers } = await createSupabaseServerClient(request);
-
-  console.log('These are the values', { email, password });
+  const { supabase, headers } = createSupabaseServerClient(request);
   
   const { data, error } = await supabase.auth.signUp({
     email,
-    password
+    password,
+    options: {
+      data: {
+        first_name,
+        last_name
+      }
+    }
   })
 
   console.log('Supabase signUp response', { data, error });
@@ -38,6 +44,16 @@ export default function Register() {
           <div className="card-body gap-4">
             <h1 className="card-title self-center text-center text-2xl">Customer Portal</h1>
             <form className="flex flex-col gap-4" method="post">
+              {/* First Name input */}
+              <label className="input">
+                <svg fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-[1em] opacity-[50]"><path id="primary" d="M21,20a2,2,0,0,1-2,2H5a2,2,0,0,1-2-2,6,6,0,0,1,6-6h6A6,6,0,0,1,21,20Zm-9-8A5,5,0,1,0,7,7,5,5,0,0,0,12,12Z"></path></svg>
+                <input type="text" placeholder="First name" name="first_name" required />
+              </label>
+              {/* Last Name input */}
+              <label className="input">
+                <svg fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-[1em] opacity-[50]"><path id="primary" d="M21,20a2,2,0,0,1-2,2H5a2,2,0,0,1-2-2,6,6,0,0,1,6-6h6A6,6,0,0,1,21,20Zm-9-8A5,5,0,1,0,7,7,5,5,0,0,0,12,12Z"></path></svg>
+                <input type="text" placeholder="Last name" name="last_name" required />
+              </label>
               {/* Email input */}
               <label className="input">
                 <svg className="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -52,7 +68,7 @@ export default function Register() {
                     <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
                   </g>
                 </svg>
-                <input type="email" placeholder="Enter your email" name="email" required />
+                <input type="email" placeholder="Email" name="email" required />
               </label>
               {/* Password input */}
               <label className="input">
@@ -73,7 +89,7 @@ export default function Register() {
                 <input
                   type="password"
                   required
-                  placeholder="Create a password"
+                  placeholder="Password"
                   minLength={8}
                   name="password"
                   pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
