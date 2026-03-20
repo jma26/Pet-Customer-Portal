@@ -1,4 +1,4 @@
-import { redirect, type ActionFunctionArgs } from 'react-router';
+import { redirect, useActionData, type ActionFunctionArgs } from 'react-router';
 import CompanyLogo from '~/assets/paws-and-plays-logo.png';
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -7,7 +7,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const password = formData.get('password') as string;
 
   const { createSupabaseServerClient } = await import('~/lib/supabase.server');
-  const { supabase, headers } = await createSupabaseServerClient(request);
+  const { supabase, headers } = createSupabaseServerClient(request);
 
   console.log('These are the values', { email, password });
   
@@ -20,26 +20,38 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (error) {
     console.log('Something went wrong...', error);
+    return { error: 'The email or password you entered is incorrect. Please try again.' };
   }
 
   return redirect('/dashboard', { headers });
 }
 
 export default function Login() {
+  const actionData = useActionData<typeof action>();
   return (
     <main>
-      <section className="bg-base-100 flex mx-auto max-w-md min-h-screen place-items-center px-4 w-full">
-        <div className="card card-border p-4 shadow-lg">
+      <section className="bg-base-100 flex mx-auto min-h-screen place-items-center p-0 w-full sm:max-w-md sm:px-4">
+        <div className="card card-border p-4 shadow-lg min-h-screen sm:min-h-auto">
           <figure>
             <img
               src={CompanyLogo}
               alt="Paws & Play logo" />
           </figure>
-          <div className="card-body gap-4">
+          <div className="card-body gap-4 p-2 sm:p-6">
             <h1 className="card-title self-center text-center text-2xl">Customer Portal</h1>
+            {actionData?.error && (
+              <div role="alert" className="alert alert-error gap-2 rounded-md">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 self-start" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <circle cx="12" cy="16" r=".5" fill="currentColor"/>
+                </svg>
+                <span>{actionData.error}</span>
+              </div>
+            )}
             <form className="flex flex-col gap-4" method="post">
               {/* Email input */}
-              <label className="input">
+              <label className="input w-full">
                 <svg className="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                   <g
                     strokeLinejoin="round"
@@ -55,7 +67,7 @@ export default function Login() {
                 <input type="email" placeholder="mail@site.com" name="email" required />
               </label>
               {/* Password input */}
-              <label className="input">
+              <label className="input w-full">
                 <svg className="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                   <g
                     strokeLinejoin="round"
@@ -74,9 +86,7 @@ export default function Login() {
                   type="password"
                   required
                   placeholder="Password"
-                  minLength={8}
                   name="password"
-                  pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
                 />
               </label>
               <div className="card-actions gap-4 mt-2 place-items-center">
