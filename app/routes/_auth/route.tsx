@@ -3,13 +3,15 @@ import SideBar from '~/components/SideBar';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { createSupabaseServerClient } = await import('~/lib/supabase.server');
-  const { supabase, headers } = await createSupabaseServerClient(request);
-  const { data: { user } } = await supabase.auth.getUser();
+  const { supabase, headers } = createSupabaseServerClient(request);
+  const { data: claims, error } = await supabase.auth.getClaims();
 
-  if (!user) {
-    console.log('No user, redirecting to login', user);
+  if (!claims || error) {
+    console.log('No session detected', claims);
     throw redirect('/login', { headers });
   }
+
+  return { user: claims };
 }
 
 export default function AuthLayout() {

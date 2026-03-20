@@ -4,12 +4,14 @@ import type { Route } from "./+types/_index";
 export async function loader({ request }: Route.LoaderArgs) {
   const { createSupabaseServerClient } = await import('~/lib/supabase.server');
   const { supabase, headers } = createSupabaseServerClient(request);
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: claims, error } = await supabase.auth.getUser();
 
-  if (!user) {
-    console.log('No user, redirecting to login', user);
+  if (!claims || error) {
+    console.log('No session detected', claims);
     throw redirect('/login', { headers });
   }
+
+  console.log('What is claims', claims);
     
-  throw redirect('/dashboard', { headers});
+  throw redirect('/dashboard', { headers });
 }
