@@ -1,5 +1,18 @@
-import { redirect, type ActionFunctionArgs } from 'react-router';
+import { redirect, useActionData, type ActionFunctionArgs } from 'react-router';
 import CompanyLogo from '~/assets/paws-and-plays-logo.png';
+import type { Route } from './+types/route';
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const { createSupabaseServerClient } = await import('~/lib/supabase.server');
+  const { supabase, headers } = createSupabaseServerClient(request);
+  const { data: claims } = await supabase.auth.getClaims();
+
+  if (claims) {
+    throw redirect('/auth/dashboard', { headers });
+  }
+
+  return null;
+}
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
@@ -26,75 +39,117 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (error) {
     console.log('Something went wrong...', error);
+    return { error: 'Something went wrong. Please try again.' };
   }
 
   return redirect('/dashboard', { headers });
 }
 
 export default function Register() {
+  const actionData = useActionData<typeof action>();
+
+  const handleSubmit = (e:React.FormEvent<HTMLFormElement>) => {
+    const form = e.currentTarget;
+    if (!form.checkValidity()) {
+      e.preventDefault();
+    }
+  }
   return (
     <main>
-      <section className="bg-base-100 flex mx-auto max-w-md min-h-screen place-items-center px-4 w-full">
-        <div className="card card-border p-4 shadow-lg">
+      <section className="bg-base-100 flex mx-auto min-h-screen place-items-center p-0 w-full sm:max-w-md sm:px-4">
+        <div className="card card-border p-4 shadow-lg min-h-screen sm:min-h-auto">
           <figure>
             <img
               src={CompanyLogo}
-              alt="Paws & Play logo" />
+              alt="Paws & Play" />
           </figure>
-          <div className="card-body gap-4">
+          <div className="card-body gap-4 p-2 sm:p-6">
             <h1 className="card-title self-center text-center text-2xl">Customer Portal</h1>
-            <form className="flex flex-col gap-4" method="post">
+            {actionData?.error && (
+              <div role="alert" className="alert alert-error gap-2 rounded-md">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0 self-start" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <circle cx="12" cy="16" r=".5" fill="currentColor"/>
+                </svg>
+                <span>{actionData.error}</span>
+              </div>
+            )
+            }
+            <form 
+              className="flex flex-col gap-4" 
+              method="post" 
+              onSubmit={handleSubmit} 
+              noValidate
+            >
               {/* First Name input */}
-              <label className="input">
-                <svg fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-[1em] opacity-[50]"><path id="primary" d="M21,20a2,2,0,0,1-2,2H5a2,2,0,0,1-2-2,6,6,0,0,1,6-6h6A6,6,0,0,1,21,20Zm-9-8A5,5,0,1,0,7,7,5,5,0,0,0,12,12Z"></path></svg>
-                <input type="text" placeholder="First name" name="first_name" required />
-              </label>
+              <div className="flex flex-col">
+                <label className="input validator w-full">
+                  <svg fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-[1em] opacity-[50]"><path id="primary" d="M21,20a2,2,0,0,1-2,2H5a2,2,0,0,1-2-2,6,6,0,0,1,6-6h6A6,6,0,0,1,21,20Zm-9-8A5,5,0,1,0,7,7,5,5,0,0,0,12,12Z"></path></svg>
+                  <input type="text" placeholder="First name" name="first_name" required />
+                </label>
+                <span className="validator-hint hidden">First name can not be empty</span>
+              </div>
               {/* Last Name input */}
-              <label className="input">
-                <svg fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-[1em] opacity-[50]"><path id="primary" d="M21,20a2,2,0,0,1-2,2H5a2,2,0,0,1-2-2,6,6,0,0,1,6-6h6A6,6,0,0,1,21,20Zm-9-8A5,5,0,1,0,7,7,5,5,0,0,0,12,12Z"></path></svg>
-                <input type="text" placeholder="Last name" name="last_name" required />
-              </label>
+              <div className="flex flex-col">
+                <label className="input validator w-full">
+                  <svg fill="#000000" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-[1em] opacity-[50]"><path id="primary" d="M21,20a2,2,0,0,1-2,2H5a2,2,0,0,1-2-2,6,6,0,0,1,6-6h6A6,6,0,0,1,21,20Zm-9-8A5,5,0,1,0,7,7,5,5,0,0,0,12,12Z"></path></svg>
+                  <input type="text" placeholder="Last name" name="last_name" required />
+                </label>
+                <span className="validator-hint hidden">Last name can not be empty</span>
+              </div>
               {/* Email input */}
-              <label className="input">
-                <svg className="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                  <g
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                    strokeWidth="2.5"
-                    fill="none"
-                    stroke="currentColor"
-                  >
-                    <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-                  </g>
-                </svg>
-                <input type="email" placeholder="Email" name="email" required />
-              </label>
+              <div className="flex flex-col">
+                <label className="input validator w-full">
+                  <svg className="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <g
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      strokeWidth="2.5"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                    </g>
+                  </svg>
+                  <input type="email" placeholder="Email" name="email" required />
+                </label>
+                <span className="validator-hint hidden">Please enter a valid email address</span>
+              </div>
               {/* Password input */}
-              <label className="input">
-                <svg className="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                  <g
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                    strokeWidth="2.5"
-                    fill="none"
-                    stroke="currentColor"
-                  >
-                    <path
-                      d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
-                    ></path>
-                    <circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle>
-                  </g>
-                </svg>
-                <input
-                  type="password"
-                  required
-                  placeholder="Password"
-                  minLength={8}
-                  name="password"
-                  pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-                />
-              </label>
+              <div className="flex flex-col">
+                <label className="input validator w-full">
+                  <svg className="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <g
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      strokeWidth="2.5"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <path
+                        d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
+                      ></path>
+                      <circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle>
+                    </g>
+                  </svg>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Password"
+                    minLength={8}
+                    name="password"
+                    pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                  />
+                </label>
+                <span className="validator-hint hidden">
+                  Must be more than 8 characters, including
+                  <br />At least one number
+                  <br />At least one lowercase letter
+                  <br />At least one uppercase letter
+                </span>
+              </div>
               <div className="card-actions gap-4 mt-2 place-items-center">
                 <button className="btn btn-primary w-full">Register</button>
                 <div className="flex place-items-center w-full">
