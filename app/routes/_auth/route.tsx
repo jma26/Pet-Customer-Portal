@@ -22,7 +22,7 @@ export default function AuthLayout() {
       <div className="drawer md:drawer-open flex-1">
         <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
         <div className="drawer-content">
-          <main className="p-4">
+          <main className="p-4 w-full">
             <Outlet />
           </main>
         </div>
