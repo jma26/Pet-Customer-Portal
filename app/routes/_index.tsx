@@ -1,7 +1,6 @@
-import { redirect } from "react-router";
-import type { Route } from "./+types/_index";
+import { redirect, type LoaderFunctionArgs } from "react-router";
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
   const { createSupabaseServerClient } = await import('~/lib/supabase.server');
   const { supabase, headers } = createSupabaseServerClient(request);
   const { data: claims, error } = await supabase.auth.getUser();
@@ -13,5 +12,5 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   console.log('What is claims', claims);
     
-  throw redirect('/dashboard', { headers });
+  throw redirect('/home', { headers });
 }

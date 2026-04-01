@@ -23,7 +23,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return { error: 'The email or password you entered is incorrect. Please try again.' };
   }
 
-  return redirect('/dashboard', { headers });
+  return redirect('/home', { headers });
 }
 
 export default function Login() {

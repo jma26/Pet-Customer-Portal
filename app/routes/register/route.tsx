@@ -8,7 +8,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const { data: claims } = await supabase.auth.getClaims();
 
   if (claims) {
-    throw redirect('/auth/dashboard', { headers });
+    throw redirect('/home', { headers });
   }
 
   return null;
@@ -42,7 +42,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return { error: 'Something went wrong. Please try again.' };
   }
 
-  return redirect('/dashboard', { headers });
+  return redirect('/home', { headers });
 }
 
 export default function Register() {
