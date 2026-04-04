@@ -5,14 +5,14 @@ import { createSupabaseServerClient } from "~/lib/supabase.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { supabase, headers } = createSupabaseServerClient(request);
-  const { data: claims, error } = await supabase.auth.getClaims();
+  const { data, error } = await supabase.auth.getClaims();
 
-  if (!claims || error) {
-    console.log('No session detected', claims);
+  if (!data?.claims || error) {
+    console.log('No session detected', data?.claims);
     throw redirect('/login', { headers });
   }
 
-  return { user: claims };
+  return { data };
 }
 
 export default function AuthLayout() {

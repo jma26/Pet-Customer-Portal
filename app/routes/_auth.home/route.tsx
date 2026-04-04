@@ -1,4 +1,5 @@
 import Placeholder from '~/assets/camera-placeholder.svg';
+import { useRouteLoaderData } from 'react-router';
 import type { Route } from './+types/route';
 
 interface Pet {
@@ -12,11 +13,29 @@ interface Pet {
   avatar_path: string
 }
 
+interface Reservation {
+  id: string,
+  user_id: string,
+  pet_id: string,
+  created_at?: Date,
+  name: string,
+  date: Date
+  time: string,
+  service: string
+}
+
+type PetReservation = Pet & { reservations: Reservation[] };
+
 export async function loader({ request }: Route.LoaderArgs) {
   const { createSupabaseServerClient } = await import('~/lib/supabase.server');
   const { supabase } = createSupabaseServerClient(request);
-  // Retrieve pets from database
-  const { data, error } = await supabase.from('pets').select();
+
+  const { data, error } = await supabase.from("pets").select(`
+    id, name, age, breed, type, avatar_path, 
+    reservations (id, name, date, time, service, pet_id)
+    `
+  );
+
   // Retrieve avatar for each pet
   const pets = data?.map((pet) => {
     const { data } = supabase.storage.from('pet-photos').getPublicUrl(`${pet.avatar_path}`);
@@ -25,13 +44,18 @@ export async function loader({ request }: Route.LoaderArgs) {
       avatar_path: data.publicUrl ?? null
     }
   })
-  console.log('What are the pets', pets);
+
   return { pets, error };
+  
 }
 
-export default function Home({ loaderData }: { loaderData: { pets: Pet[], error: unknown }}) {
+export default function Home({ loaderData }: { loaderData: { pets: PetReservation[], error: unknown }}) {
   const { pets, error } = loaderData
+  const { data } = useRouteLoaderData('routes/_auth');
+  const user = data?.claims.user_metadata;
+  console.log('What is this', user);
   console.log('There is an error', error);
+  console.log('What is the data', pets);
 
   return (
     <>
@@ -40,7 +64,7 @@ export default function Home({ loaderData }: { loaderData: { pets: Pet[], error:
       <div className="flex flex-col gap-8">
         <section className="card bg-base-100 card-md shadow-sm">
           <div className="card-body">
-            <h2 className="card-title font-semibold text-lg">Welcome back, User</h2>
+            <h2 className="card-title font-semibold text-lg">Welcome back {user?.first_name}!</h2>
             <p>Here's what's happening with your pets today</p>
           </div>
         </section>
@@ -88,7 +112,7 @@ export default function Home({ loaderData }: { loaderData: { pets: Pet[], error:
                   <div className="card-body gap-1 w-full">
                     <h3 className="card-title font-semibold text-normal">{pet.name}</h3>
                     <div className="flex flex-col gap-1">
-                      <p className="text-xs">{pet.breed}</p>
+                      <p className="text-sm">{pet.breed}</p>
                       <p className="text-xs">{pet.age} years</p>
                     </div>
                   </div>
@@ -101,6 +125,49 @@ export default function Home({ loaderData }: { loaderData: { pets: Pet[], error:
                   <h3 className="card-title font-semibold text-normal">You have no pets!</h3>
                   <div className="flex flex-col gap-1">
                     <p className="text-xs">Add a pet to get started.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+        {/* Upcoming Reservations */}
+        <section className="flex flex-col gap-2">
+          <h2 className="font-semibold text-lg">Upcoming Reservations</h2>
+          <div className="grid grid-cols-1 gap-4">
+            { pets.length > 0 ? (
+              pets.map((pet) => {
+                if (pet.reservations.length > 0) {
+                  const reservations = pet.reservations
+                  return reservations.map((reservation) => {
+                    const [year, month, day] = reservation.date.toString().split('-').map(Number);
+                    const [hours, minutes, seconds] = reservation.time.split(':').map(Number);
+                    const period = hours >= 12 ? 'PM' : 'AM';
+                    const hours12 = hours % 12 || 12;
+
+                    return (
+                      <div className="card card-side bg-base-100 card-sm gap-4 p-4 shadow-sm" key={reservation.id}>
+                        <div className="bg-base-200 flex flex-col p-4 items-center justify-center">
+                            <span className="text-normal">{new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(2000, month - 1))}</span>
+                            <span className="font-bold leading-none text-xl">{day < 10 ? `0${day}` : `${day}`}</span>
+                        </div>
+                        <div className="card-body gap-1 w-full">
+                          <h3 className="card-title capitalize font-semibold text-normal">{reservation.service} - {pet.name}</h3>
+                          <div className="flex flex-col gap-1">
+                            <p className="text-sm">{`${hours12}:${String(minutes).padStart(2, "0")} ${period}`}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                }
+              })
+            ) : (
+              <div className="card card-side bg-base-100 card-sm p-4 shadow-sm">
+                <div className="card-body gap-1 w-full">
+                  <h3 className="card-title font-semibold text-normal">You have no upcoming reservations!</h3>
+                  <div className="flex flex-col gap-1">
+                    <p className="text-xs">Add a reservation to get started.</p>
                   </div>
                 </div>
               </div>
