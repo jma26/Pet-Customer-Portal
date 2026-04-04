@@ -6,46 +6,46 @@
   color-scheme: light;
 
   /* brand colors */
-  --color-primary: #E86F1E;        /* CTA buttons */
-  --color-primary-focus: #C85F1A;
+  --color-primary: #D8725B;        /* Terracotta - CTA buttons */
+  --color-primary-focus: #C9624D;
   --color-primary-content: #FFFFFF;
 
-  --color-secondary: #6B3F2A;      /* headings / logo */
-  --color-secondary-focus: #5A3322;
+  --color-secondary: #8FA68E;      /* Sage - secondary actions */
+  --color-secondary-focus: #7A9179;
   --color-secondary-content: #FFFFFF;
 
-  --color-accent: #F3CBA5;         /* icons / highlights */
-  --color-accent-focus: #E6B98E;
-  --color-accent-content: #4A2B1C;
+  --color-accent: #2F4858;         /* Navy - highlights / badges */
+  --color-accent-focus: #253948;
+  --color-accent-content: #FFFFFF;
 
   /* neutral / text */
-  --color-neutral: #2F2F2F;        /* heading text */
-  --color-neutral-focus: #1F1F1F;
+  --color-neutral: #3D3D3A;        /* Charcoal - heading text */
+  --color-neutral-focus: #2C2C2A;
   --color-neutral-content: #FFFFFF;
 
   /* base surfaces */
-  --color-base-100: #FAF9F7;       /* page background */
-  --color-base-200: #F1EFEA;       /* section background */
-  --color-base-300: #E6E3E0;       /* borders / dividers */
-  --color-base-content: #2F2F2F;   /* body text */
+  --color-base-100: #FFFFFF;       /* White - cards */
+  --color-base-200: #F4EFE6;       /* Sand - section background */
+  --color-base-300: #FBF8F3;       /* Cream - page background */
+  --color-base-content: #3D3D3A;   /* Charcoal - body text */
 
   /* semantic colors */
-  --color-info: #4FA3D1;
-  --color-info-content: #F0F9FF;
+  --color-info: #B8D4CC;           /* Mint */
+  --color-info-content: #2F4858;
 
-  --color-success: #6BBF8E;
-  --color-success-content: #ECFDF5;
+  --color-success: #8FA68E;        /* Sage */
+  --color-success-content: #FFFFFF;
 
-  --color-warning: #F4B740;
-  --color-warning-content: #FFFBEB;
+  --color-warning: #F5D5C8;        /* Peach */
+  --color-warning-content: #6B6862;
 
-  --color-error: #E05858;
-  --color-error-content: #FEF2F2;
+  --color-error: #C9624D;          /* Darker terracotta */
+  --color-error-content: #FFFFFF;
 
   /* border radius */
-  --radius-selector: 9999px;  /* pills / buttons */
-  --radius-field: 0.375rem;
-  --radius-box: 1rem;
+  --radius-selector: 1.5rem;       /* 24px - pills / buttons */
+  --radius-field: 0.75rem;         /* 12px - inputs */
+  --radius-box: 1.25rem;           /* 20px - cards */
 
   /* base sizes */
   --size-selector: 0.25rem;
