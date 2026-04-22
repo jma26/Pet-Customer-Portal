@@ -1,4 +1,6 @@
 import Placeholder from '~/assets/camera-placeholder.svg';
+import CatPlaceholder from '~/assets/cat-placeholder.png';
+import DogPlaceholder from '~/assets/dog-placeholder.png';
 import { useRouteLoaderData } from 'react-router';
 import type { Route } from './+types/route';
 
@@ -38,10 +40,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   // Retrieve avatar for each pet
   const pets = data?.map((pet) => {
-    const { data } = supabase.storage.from('pet-photos').getPublicUrl(`${pet.avatar_path}`);
     return {
       ...pet,
-      avatar_path: data.publicUrl ?? null
+      avatar_path: pet.avatar_path ? supabase.storage.from('pet-photos').getPublicUrl(`${pet.avatar_path}`).data.publicUrl : null
     }
   })
 
@@ -53,9 +54,17 @@ export default function Home({ loaderData }: { loaderData: { pets: PetReservatio
   const { pets, error } = loaderData
   const { data } = useRouteLoaderData('routes/_auth');
   const user = data?.claims.user_metadata;
+  const reservations = pets.flatMap((pet) => {
+    return (
+      pet.reservations.map((reservation) => ({
+        ...reservation
+      }))
+    )
+  })
   console.log('What is this', user);
   console.log('There is an error', error);
   console.log('What is the data', pets);
+  console.log('What are the reservations', reservations);
 
   return (
     <>
@@ -104,7 +113,7 @@ export default function Home({ loaderData }: { loaderData: { pets: PetReservatio
                     <div className="avatar aspect-square rounded-full">
                       <img 
                         className="rounded-full" 
-                        src={pet.avatar_path} 
+                        src={ pet.avatar_path !== null ? pet.avatar_path : (pet.type === 'Cat' ? CatPlaceholder : DogPlaceholder) }
                         alt={pet.name} 
                       />
                     </div>
@@ -135,32 +144,27 @@ export default function Home({ loaderData }: { loaderData: { pets: PetReservatio
         <section className="flex flex-col gap-2">
           <h2 className="font-semibold text-lg">Upcoming Reservations</h2>
           <div className="grid grid-cols-1 gap-4">
-            { pets.length > 0 ? (
-              pets.map((pet) => {
-                if (pet.reservations.length > 0) {
-                  const reservations = pet.reservations
-                  return reservations.map((reservation) => {
-                    const [year, month, day] = reservation.date.toString().split('-').map(Number);
-                    const [hours, minutes, seconds] = reservation.time.split(':').map(Number);
-                    const period = hours >= 12 ? 'PM' : 'AM';
-                    const hours12 = hours % 12 || 12;
+            { reservations.length > 0 ? (
+              reservations.map((reservation) => {
+                const [year, month, day] = reservation.date.toString().split('-').map(Number);
+                const [hours, minutes, seconds] = reservation.time.split(':').map(Number);
+                const period = hours >= 12 ? 'PM' : 'AM';
+                const hours12 = hours % 12 || 12;
 
-                    return (
-                      <div className="card card-side bg-base-100 card-sm gap-4 p-4 shadow-sm" key={reservation.id}>
-                        <div className="bg-base-200 flex flex-col p-4 items-center justify-center">
-                            <span className="text-normal">{new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(2000, month - 1))}</span>
-                            <span className="font-bold leading-none text-xl">{day < 10 ? `0${day}` : `${day}`}</span>
-                        </div>
-                        <div className="card-body gap-1 w-full">
-                          <h3 className="card-title capitalize font-semibold text-normal">{reservation.service} - {pet.name}</h3>
-                          <div className="flex flex-col gap-1">
-                            <p className="text-sm">{`${hours12}:${String(minutes).padStart(2, "0")} ${period}`}</p>
-                          </div>
-                        </div>
+                return (
+                  <div className="card card-side bg-base-100 card-sm gap-4 p-4 shadow-sm" key={reservation.id}>
+                    <div className="bg-base-200 flex flex-col p-4 items-center justify-center">
+                        <span className="text-normal">{new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(2000, month - 1))}</span>
+                        <span className="font-bold leading-none text-xl">{day < 10 ? `0${day}` : `${day}`}</span>
+                    </div>
+                    <div className="card-body gap-1 w-full">
+                      <h3 className="card-title capitalize font-semibold text-normal">{reservation.service} - {reservation.name}</h3>
+                      <div className="flex flex-col gap-1">
+                        <p className="text-sm">{`${hours12}:${String(minutes).padStart(2, "0")} ${period}`}</p>
                       </div>
-                    )
-                  })
-                }
+                    </div>
+                  </div>
+                )
               })
             ) : (
               <div className="card card-side bg-base-100 card-sm p-4 shadow-sm">

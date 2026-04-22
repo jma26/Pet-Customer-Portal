@@ -3,6 +3,8 @@ import type { Route } from "../_auth/+types/route";
 import { Form, useFetcher } from 'react-router';
 import AvatarUploader, { type AvatarUploaderHandle } from "~/components/AvatarUploader";
 import Modal from "~/components/Modal";
+import CatPlaceholder from '~/assets/cat-placeholder.png';
+import DogPlaceholder from '~/assets/dog-placeholder.png';
 
 interface Pet {
   id: string,
@@ -22,10 +24,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   const { data, error } = await supabase.from('pets').select();
   // Retrieve avatar for each pet
   const pets = data?.map((pet) => {
-    const { data } = supabase.storage.from('pet-photos').getPublicUrl(`${pet.avatar_path}`);
     return {
       ...pet,
-      avatar_path: data.publicUrl ?? null
+      avatar_path: pet.avatar_path ? supabase.storage.from('pet-photos').getPublicUrl(`${pet.avatar_path}`).data.publicUrl : null
     }
   })
   console.log('What are the pets', pets);
@@ -39,7 +40,7 @@ export async function action({ request }: Route.ActionArgs) {
   const formObj: Partial<Pet> = {};
   const formData = await request.formData();
   const avatarFile = formData.get('avatar');
-  const hasAvatar = avatarFile instanceof File;
+  const hasAvatar = avatarFile instanceof File && avatarFile.size > 0;
 
   // Build form object
   for (const key of petFields) {
@@ -54,7 +55,6 @@ export async function action({ request }: Route.ActionArgs) {
 
   console.log('This is the form object', formObj);
   console.log('What is the avatarFile', avatarFile);
-  console.log('Do I have an avatar', hasAvatar);
 
   switch(request.method) {
     case 'POST': {
@@ -68,6 +68,7 @@ export async function action({ request }: Route.ActionArgs) {
       console.log('What is userId', pet[0].user_id);
 
       if (hasAvatar) {
+        console.log('Why am I hitting this if case block?');
         // Upload to storage
         const { uploadPetAvatar } = await import ('~/lib/uploadAvatar.server');
         const filePath = await uploadPetAvatar({
@@ -184,7 +185,10 @@ export default function Pets({ loaderData }: { loaderData: { pets: Pet[], error:
                 <div className="flex gap-8 items-center">
                   <div className="avatar">
                     <div className="w-40 rounded-full">
-                      <img src={ pet.avatar_path } alt={ pet.name } />
+                      <img 
+                        src={ pet.avatar_path !== null ? pet.avatar_path : (pet.type === 'Cat' ? CatPlaceholder : DogPlaceholder) }
+                        alt={ pet.name }
+                      />
                     </div>
                   </div>
                   <div className="flex flex-col gap-4">
